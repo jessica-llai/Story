@@ -1,228 +1,71 @@
-import datetime
+import time
+import tkinter
+from tkinter import *
+import customtkinter
+import random
+# workflow: click start - typing - 60s - auto calculate the right word - calculate the speed - display in the scoreboard
 
-from flask import Flask, render_template, redirect, url_for, flash, abort
-from flask_bootstrap import Bootstrap
-from flask_ckeditor import CKEditor
-from datetime import date
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import delete
-from sqlalchemy.orm import relationship
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
-from flask_gravatar import Gravatar
-from flask_wtf import FlaskForm
-from functools import wraps
-from datetime import date
+possibleTexts = [
+    'For writers, a random sentence can help them get their creative juices flowing. Since the topic of the sentence is completely unknown, it forces the writer to be creative when the sentence appears. There are a number of different ways a writer can use the random sentence for creativity. The most common way to use the sentence is to begin a story. Another option is to include it somewhere in the story. A much more difficult challenge is to use it to end a story. In any of these cases, it forces the writer to think creatively since they have no idea what sentence will appear from the tool.',
+    'The goal of Python Code is to provide Python tutorials, recipes, problem fixes and articles to beginner and intermediate Python programmers, as well as sharing knowledge to the world. Python Code aims for making everyone in the world be able to learn how to code for free. Python is a high-level, interpreted, general-purpose programming language. Its design philosophy emphasizes code readability with the use of significant indentation. Python is dynamically-typed and garbage-collected. It supports multiple programming paradigms, including structured (particularly procedural), object-oriented and functional programming. It is often described as a "batteries included" language due to its comprehensive standard library.',
+    'As always, we start with the imports. Because we make the UI with tkinter, we need to import it. We also import the font module from tkinter to change the fonts on our elements later. We continue by getting the partial function from functools, it is a genius function that excepts another function as a first argument and some args and kwargs and it will return a reference to this function with those arguments. This is especially useful when we want to insert one of our functions to a command argument of a button or a key binding.'
+]
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
-ckeditor = CKEditor(app)
-Bootstrap(app)
-
-##CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
-
-##CONFIGURE TABLES
+text = random.choice(possibleTexts).lower()
 
 
 
-class User(UserMixin,db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer,primary_key=True)
-    email = db.Column(db.String, nullable=False, unique=True)
-    password = db.Column(db.String, nullable=False)
-    name = db.Column(db.String)
-    posts = relationship('BlogPost', back_populates='author')
-    comment = relationship('Comment',back_populates='comment_author')
+
+# screen
+customtkinter.set_appearance_mode("System")  # Modes: system (default), light, dark
+customtkinter.set_default_color_theme("blue")  # Themes: blue (default), dark-blue, green
+
+app = customtkinter.CTk()  # create CTk window like you do with the Tk window
+app.minsize(500,400)
+app.title('Test Your Speed')
 
 
-class BlogPost(db.Model):
-    __tablename__ = "blog_post"
-    id = db.Column(db.Integer,primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    author = relationship('User',back_populates='posts')
-    title = db.Column(db.String(250), unique=True, nullable=False)
-    subtitle = db.Column(db.String(250), nullable=False)
-    date = db.Column(db.String(250), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    img_url = db.Column(db.String(250), nullable=False)
-    comment = relationship('Comment', back_populates='parent_post')
+def count_time():
+    for t in range(60):
+        app.after(1000)
+        count_text()
+
+def count_text():
+    for i in range(len(typed_text.get('1.0', 'end-1c').split())):
+        n = 0
+        if all_text_list[i] == typed_text_list[i]:
+            n += 1
+        score = customtkinter.CTkLabel(master=app, text=f"Your Test Score: {n} per minute")
+        score.place(relx=0.7, rely=0.1, anchor=tkinter.CENTER)
 
 
-class Comment(db.Model):
-    __tablename__ = 'comment'
-    id = db.Column(db.Integer, primary_key =True)
-    author_id = db.Column(db.Integer,db.ForeignKey('users.id'))
-    comment_author = relationship('User',back_populates='comment')
 
-    post_id = db.Column(db.Integer, db.ForeignKey('blog_post.id'))
-    parent_post = relationship('BlogPost',back_populates='comment')
-    text = db.Column(db.Text, nullable=False)
+# start Button
+count_down_button = customtkinter.CTkButton(master=app, text="Start", command=count_time)
+count_down_button.place(relx=0.3, rely=0.2,anchor=tkinter.CENTER)
 
+# restart Button
+button = customtkinter.CTkButton(master=app, text="Restart", command=count_time)
+button.place(relx=0.7, rely=0.2,anchor=tkinter.CENTER)
 
-db.create_all()
-
-
-# login
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.query(User).get(user_id)
-
-# require login to modify
-def admin_only(f):
-    @wraps(f)
-    def decorated_function(*args,**kwargs):
-        if current_user.id != 1:
-            return abort(403)
-        return f(*args, **kwargs)
-    return decorated_function
+#TODO scoreboard
+# Label for score
+label = customtkinter.CTkLabel(master=app, text="Start to test your typing speed!")
+label.place(relx=0.3, rely=0.1,anchor=tkinter.CENTER)
 
 
-@app.route('/')
-def get_all_posts():
-    posts = BlogPost.query.all()
-    return render_template("index.html", all_posts=posts)
+#TODO text
+# Label for text
+all_text = Text(app, width=60,height=10)
+all_text.place(relx=0.5, rely=0.4,anchor=tkinter.CENTER)
+all_text.insert(tkinter.END,text)
+# Entry for text
+typed_text= Text(app, width=60,height=10)
+typed_text.place(relx=0.5, rely=0.7,anchor=tkinter.CENTER)
+
+all_text_list = all_text.get('1.0','end-1c').split()
+typed_text_list = typed_text.get('1.0','end-1c').split()
 
 
-@app.route('/register', methods=['GET','POST'])
-def register():
-    form = RegisterForm()
-    if form.validate_on_submit():
-        if db.session.query(User).filter_by(email=form.email.data).first():
-            flash("You've signed up with the email. Please log in.")
-            return redirect(url_for('login'))
 
-        pw_hash_and_salt = generate_password_hash(
-            form.password.data,
-            method='pbkdf2:sha256',
-            salt_length=8
-        )
-        new_user = User(
-            name=form.name.data,
-            email=form.email.data,
-            password=pw_hash_and_salt
-        )
-
-        db.session.add(new_user)
-        db.session.commit()
-        login_user(new_user)
-        return redirect(url_for('get_all_posts'))
-
-    return render_template("register.html", form=form)
-
-
-@app.route('/login', methods=['GET','POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        email = form.email.data
-        password = form.password.data
-        user = db.session.query(User).filter_by(email=email).first()
-        if not user:
-            flash('The email does not exist.')
-            return redirect(url_for('login'))
-        elif not check_password_hash(user.password, password):
-            flash('Wrong password.')
-            return redirect(url_for('login'))
-        else:
-            login_user(user)
-            return redirect(url_for('get_all_posts'))
-    return render_template("login.html", form=form, current_user=current_user)
-
-
-@app.route('/logout', methods=['GET','POST'])
-def logout():
-    logout_user()
-    return redirect(url_for('get_all_posts'))
-
-
-@app.route("/post/<int:post_id>", methods=['GET','POST'])
-def show_post(post_id):
-    form = CommentForm()
-    requested_post = BlogPost.query.get(post_id)
-    if form.validate_on_submit():
-        if not current_user.is_authenticated:
-            flash('Log in please')
-            return redirect(url_for('login'))
-
-        new_comment = Comment(
-            text = form.comment_text.data,
-            comment_author = current_user,
-            parent_post = requested_post
-        )
-        db.session.add(new_comment)
-        db.session.commit()
-    return render_template("post.html", post=requested_post, form=form, current_user=current_user)
-
-
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
-
-@app.route("/contact")
-def contact():
-    return render_template("contact.html")
-
-
-@app.route("/new-post", methods=['GET','POST'])
-@admin_only
-def add_new_post():
-    form = CreatePostForm()
-    if form.validate_on_submit():
-        new_post = BlogPost(
-            title=form.title.data,
-            subtitle=form.subtitle.data,
-            body=form.body.data,
-            img_url=form.img_url.data,
-            author=current_user,
-            date=date.today().strftime("%B %d, %Y")
-        )
-        db.session.add(new_post)
-        db.session.commit()
-        return redirect(url_for("get_all_posts"))
-    return render_template("make-post.html", form=form)
-
-
-@app.route("/edit-post/<int:post_id>", methods=['GET','POST'])
-@admin_only
-def edit_post(post_id):
-    post = BlogPost.query.get(post_id)
-    edit_form = CreatePostForm(
-        title=post.title,
-        subtitle=post.subtitle,
-        img_url=post.img_url,
-        author=post.author,
-        body=post.body,
-    )
-    if edit_form.validate_on_submit():
-        post.title = edit_form.title.data
-        post.subtitle = edit_form.subtitle.data
-        post.img_url = edit_form.img_url.data
-        post.author = edit_form.author.data
-        post.body = edit_form.body.data
-        post.date= datetime.date.strftime('%B %d, %Y')
-        db.session.commit()
-        return redirect(url_for("show_post", post_id=post.id))
-
-    return render_template("make-post.html", form=edit_form)
-
-
-@app.route("/delete/<int:post_id>", methods=['GET','POST'])
-@admin_only
-def delete_post(post_id):
-    post_to_delete = BlogPost.query.get(post_id)
-    db.session.delete(post_to_delete)
-    db.session.commit()
-    return redirect(url_for('get_all_posts'))
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+app.mainloop()
